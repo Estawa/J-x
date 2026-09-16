@@ -4,7 +4,7 @@ Cadeau rigolo pour tes collègues : compte à rebours plein écran jusqu'aux vac
 alimenté par les phrases, blagues, devinettes et photos ajoutées par tout le monde.
 
 Comme pour tes autres applis (EPS Pro, Muscu Pro...), il faut : un dépôt GitHub,
-un projet Vercel, et un projet Firebase (Firestore + Storage). Aucune installation
+un projet Vercel, et un projet Firebase (Firestore uniquement). Aucune installation
 sur ordinateur n'est nécessaire, tout se fait depuis le téléphone ou un navigateur.
 
 ---
@@ -30,15 +30,17 @@ sur ordinateur n'est nécessaire, tout se fait depuis le téléphone ou un navig
 3. Dans le menu de gauche : **Compilation > Firestore Database** → **Créer une
    base de données** → choisis une région proche (ex. `eur3 (europe-west)`) →
    démarre en **mode test** (on ajustera les règles juste après).
-4. Toujours dans le menu de gauche : **Compilation > Storage** → **Commencer** →
-   même région → mode test également.
-5. Dans le menu de gauche : **Paramètres du projet** (icône roue crantée en
+4. Dans le menu de gauche : **Paramètres du projet** (icône roue crantée en
    haut) > onglet **Général** > section **Vos applications** > clique sur
    l'icône **Web `</>`** pour ajouter une application web.
-6. Donne-lui un nom (ex. `vacances-jx-web`), **ne coche pas** "Configurer
+5. Donne-lui un nom (ex. `vacances-jx-web`), **ne coche pas** "Configurer
    Firebase Hosting".
-7. Firebase affiche un bloc de code `firebaseConfig` avec des valeurs
+6. Firebase affiche un bloc de code `firebaseConfig` avec des valeurs
    (`apiKey`, `authDomain`, `projectId`...). **Copie ces valeurs.**
+
+> ℹ️ Pas besoin d'activer Firebase Storage : les photos sont compressées et
+> stockées directement dans Firestore (voir plus bas), ce qui évite d'avoir
+> à passer au forfait payant Blaze que Google impose désormais pour Storage.
 
 ### Coller la configuration dans le projet
 
@@ -61,21 +63,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-```
-
-Clique sur **Publier**.
-
-**Storage** (menu Storage > onglet **Règles**), remplace tout par :
-
-```
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /{allPaths=**} {
       allow read, write: if true;
     }
   }

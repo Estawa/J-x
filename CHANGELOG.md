@@ -2,6 +2,16 @@
 
 Voir INSTALLATION.md pour la mise en ligne (GitHub / Firebase / Vercel).
 
+## v1.2.0 — 16/09/2026
+- **Photos sans Firebase Storage** : Google impose désormais le forfait payant Blaze pour
+  activer Firebase Storage. Pour éviter ça, les photos sont maintenant redimensionnées et
+  compressées directement dans le navigateur (JPEG, réduction progressive de la taille et
+  de la qualité si besoin) puis stockées comme simple champ texte (base64) dans le document
+  Firestore de la photo — un seul service Firebase (Firestore) suffit désormais, entièrement
+  gratuit. Si une photo reste trop lourde même après compression, l'ajout est refusé avec un
+  message demandant d'en choisir une autre
+- `firebase.js` simplifié : suppression de l'import et de l'export Storage, devenus inutiles
+
 ## v1.1.0 — 16/09/2026
 - **Écran d'ouverture surprise** : à chaque lancement de l'appli, avant d'apercevoir les
   compteurs, un élément est tiré au hasard dans la bibliothèque (une phrase, une blague,
