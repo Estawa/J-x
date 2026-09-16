@@ -14,7 +14,7 @@ import {
   Clock, User, ChevronLeft,
 } from "lucide-react";
 
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---------- Couleurs (mêmes variables CSS que index.html) ----------
@@ -131,7 +131,8 @@ function calculerCompteur(edt, profil, cible, maintenant, aujourdhuiISO) {
     m: Math.floor((diffMs % 3600000) / 60000),
     s: Math.floor((diffMs % 60000) / 1000),
   };
-  return { nom: cible.nom, joursTravail, joursTotal, heuresRestantes, progression, live };
+  const dodosRestants = Math.max(Math.round((cibleDate - new Date(aujourdhuiISO + "T00:00:00")) / 86400000), 0);
+  return { nom: cible.nom, joursTravail, joursTotal, heuresRestantes, dodosRestants, progression, live };
 }
 
 // ---------- Seed Firestore (première ouverture : peuple les bibliothèques) ----------
@@ -368,6 +369,11 @@ function EcranAccueil({ profil, edt, phrases, blagues, devinettes, photos, onOuv
               <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 12.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 4 }}>{nomAffiche}</div>
               <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 96, color: "#fff", lineHeight: 1, fontWeight: 600 }}>{compteur.joursTravail}</div>
               <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginBottom: 14 }}>jour(s) de travail restant(s)</div>
+
+              <div style={{ display: "flex", alignItems: "baseline", gap: 6, color: "#fff", marginBottom: 14 }}>
+                <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: 32, fontWeight: 700 }}>🛌 {compteur.dodosRestants}</span>
+                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.85)" }}>dodo{compteur.dodosRestants > 1 ? "s" : ""} restant{compteur.dodosRestants > 1 ? "s" : ""}</span>
+              </div>
 
               <div style={{ display: "flex", gap: 18, marginBottom: 16 }}>
                 <div>
