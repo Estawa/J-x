@@ -2,6 +2,12 @@
 
 Voir INSTALLATION.md pour la mise en ligne (GitHub / Firebase / Vercel).
 
+## v1.3.0 — 16/09/2026
+- **Nombre de dodos restants** : ajout d'un nouveau décompte « 🛌 X dodo(s) restant(s) »
+  sur l'écran d'accueil, pour les deux onglets (Prochaines vacances et Vacances d'été).
+  Il compte le nombre de nuits/dodos avant le premier jour de la période, en plus des
+  compteurs existants (jours de travail, jours au total, heures de travail restantes)
+
 ## v1.2.0 — 16/09/2026
 - **Photos sans Firebase Storage** : Google impose désormais le forfait payant Blaze pour
   activer Firebase Storage. Pour éviter ça, les photos sont maintenant redimensionnées et
