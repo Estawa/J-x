@@ -2,6 +2,11 @@
 
 Voir INSTALLATION.md pour la mise en ligne (GitHub / Firebase / Vercel).
 
+## v1.3.1 — 16/09/2026
+- Suppression du compteur « jours au total » sur l'écran d'accueil (redondant avec le
+  nouveau « dodos restants »), pour les deux onglets. Il ne reste que le nombre de
+  dodos restants et les heures de travail restantes en complément du jour de travail
+
 ## v1.3.0 — 16/09/2026
 - **Nombre de dodos restants** : ajout d'un nouveau décompte « 🛌 X dodo(s) restant(s) »
   sur l'écran d'accueil, pour les deux onglets (Prochaines vacances et Vacances d'été).
