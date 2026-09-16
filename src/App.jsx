@@ -14,7 +14,7 @@ import {
   Clock, User, ChevronLeft,
 } from "lucide-react";
 
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.3.1";
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---------- Couleurs (mêmes variables CSS que index.html) ----------
@@ -376,10 +376,6 @@ function EcranAccueil({ profil, edt, phrases, blagues, devinettes, photos, onOuv
               </div>
 
               <div style={{ display: "flex", gap: 18, marginBottom: 16 }}>
-                <div>
-                  <div style={{ color: "#fff", fontWeight: 800, fontSize: 20 }}>{compteur.joursTotal}</div>
-                  <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 10.5 }}>jours au total</div>
-                </div>
                 <div>
                   <div style={{ color: "#fff", fontWeight: 800, fontSize: 20 }}>{compteur.heuresRestantes}h</div>
                   <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 10.5 }}>de travail restantes</div>
