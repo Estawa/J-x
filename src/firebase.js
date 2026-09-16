@@ -6,12 +6,12 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "REMPLACE_MOI",
-  authDomain: "REMPLACE_MOI.firebaseapp.com",
-  projectId: "REMPLACE_MOI",
-  storageBucket: "REMPLACE_MOI.appspot.com",
-  messagingSenderId: "REMPLACE_MOI",
-  appId: "REMPLACE_MOI",
+  apiKey: "AIzaSyC1DSCrXMxQ74XfJ9gU51O4HN0614S9LG4",
+  authDomain: "vacances-934b0.firebaseapp.com",
+  projectId: "vacances-934b0",
+  storageBucket: "vacances-934b0.firebasestorage.app",
+  messagingSenderId: "94300115202",
+  appId: "1:94300115202:web:5eada3ab21f2e34f05f21b",
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
