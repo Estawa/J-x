@@ -2,9 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc,
 } from "firebase/firestore";
-import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import confetti from "canvas-confetti";
-import { db, storage } from "./firebase.js";
+import { db } from "./firebase.js";
 import {
   ZONES, FERIES_COMMUNS, PALIERS, palierPour,
   PHRASES_DEFAUT, DEVINETTES_DEFAUT, BLAGUES_DEFAUT,
@@ -15,7 +14,7 @@ import {
   Clock, User, ChevronLeft,
 } from "lucide-react";
 
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.2.0";
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---------- Couleurs (mêmes variables CSS que index.html) ----------
@@ -793,7 +792,49 @@ function LigneTexteEditable({ texte, onModifier, onSupprimer }) {
   );
 }
 
-// ---------- Photos ----------
+// ---------- Photos : compression côté appareil, stockage en base64 dans Firestore ----------
+// Pas de Firebase Storage (qui exige le forfait payant Blaze) : chaque photo est
+// redimensionnée et compressée en JPEG, puis enregistrée comme simple champ texte
+// du document Firestore. Un document Firestore est limité à 1 Mo : on vise donc
+// une marge confortable en dessous (700 Ko), quitte à réduire encore la qualité.
+const LIMITE_OCTETS_PHOTO = 700 * 1024;
+const PALIERS_COMPRESSION = [
+  [1000, 0.8], [1000, 0.6], [800, 0.6], [800, 0.45], [600, 0.4], [500, 0.35],
+];
+function tailleApproxDataUrl(dataUrl) {
+  return Math.round((dataUrl.length * 3) / 4);
+}
+function comprimerImage(fichier) {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onload = () => {
+      const image = new window.Image();
+      image.onload = () => {
+        for (const [maxDim, qualite] of PALIERS_COMPRESSION) {
+          const ratio = Math.min(1, maxDim / Math.max(image.width, image.height));
+          const largeur = Math.max(1, Math.round(image.width * ratio));
+          const hauteur = Math.max(1, Math.round(image.height * ratio));
+          const canvas = document.createElement("canvas");
+          canvas.width = largeur;
+          canvas.height = hauteur;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(image, 0, 0, largeur, hauteur);
+          const dataUrlCompresse = canvas.toDataURL("image/jpeg", qualite);
+          if (tailleApproxDataUrl(dataUrlCompresse) <= LIMITE_OCTETS_PHOTO) {
+            resolve(dataUrlCompresse);
+            return;
+          }
+        }
+        reject(new Error("trop-lourd"));
+      };
+      image.onerror = () => reject(new Error("image-invalide"));
+      image.src = lecteur.result;
+    };
+    lecteur.onerror = () => reject(new Error("lecture-echouee"));
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
 function GestionPhotos({ photos, profil }) {
   const inputGalerie = useRef(null);
   const inputCamera = useRef(null);
@@ -803,20 +844,17 @@ function GestionPhotos({ photos, profil }) {
     if (!fichier) return;
     setEnCours(true);
     try {
-      const chemin = `photos/${uid()}-${fichier.name}`;
-      const r = storageRef(storage, chemin);
-      await uploadBytes(r, fichier);
-      const url = await getDownloadURL(r);
-      await addDoc(collection(db, "photos"), { url, chemin, auteur: profil.prenom, dateAjout: Date.now() });
+      const url = await comprimerImage(fichier);
+      await addDoc(collection(db, "photos"), { url, auteur: profil.prenom, dateAjout: Date.now() });
     } catch (e) {
-      alert("Échec de l'envoi de la photo. Réessaie.");
+      if (e && e.message === "trop-lourd") alert("Cette photo est trop lourde même après compression. Essaie une autre photo.");
+      else alert("Échec de l'ajout de la photo. Réessaie.");
     }
     setEnCours(false);
   };
 
   const supprimer = async (photo) => {
     if (!confirm("Supprimer cette photo pour tout le monde ?")) return;
-    try { await deleteObject(storageRef(storage, photo.chemin)); } catch {}
     await deleteDoc(doc(db, "photos", photo.id));
   };
 
@@ -828,7 +866,7 @@ function GestionPhotos({ photos, profil }) {
       </div>
       <input ref={inputGalerie} type="file" accept="image/*" hidden onChange={(e) => televerser(e.target.files?.[0])} />
       <input ref={inputCamera} type="file" accept="image/*" capture="environment" hidden onChange={(e) => televerser(e.target.files?.[0])} />
-      {enCours && <div style={{ fontSize: 12.5, color: MUTED_SOFT, marginBottom: 10 }}>Envoi en cours…</div>}
+      {enCours && <div style={{ fontSize: 12.5, color: MUTED_SOFT, marginBottom: 10 }}>Compression et envoi en cours…</div>}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: 8 }}>
         {photos.map((p) => (

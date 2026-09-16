@@ -1,9 +1,9 @@
-// ⚠️ À REMPLACER : colle ici la configuration de TON projet Firebase
-// (Console Firebase > Paramètres du projet > Tes applications > Config).
+// Configuration du projet Firebase (Firestore uniquement — pas de Storage,
+// les photos sont compressées et stockées directement en base64 dans Firestore
+// pour éviter d'imposer le forfait payant Blaze).
 // Voir INSTALLATION.md pour la marche à suivre complète, pas à pas.
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC1DSCrXMxQ74XfJ9gU51O4HN0614S9LG4",
@@ -16,4 +16,3 @@ const firebaseConfig = {
 
 export const firebaseApp = initializeApp(firebaseConfig);
 export const db = getFirestore(firebaseApp);
-export const storage = getStorage(firebaseApp);
