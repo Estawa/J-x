@@ -3,7 +3,7 @@ import {
   collection, doc, onSnapshot, addDoc, updateDoc, deleteDoc, setDoc,
 } from "firebase/firestore";
 import confetti from "canvas-confetti";
-import { db } from "./firebase.js";
+import { db, COL, migrerSiBesoin } from "./firebase.js";
 import {
   ZONES, FERIES_COMMUNS, PALIERS, palierPour,
   PHRASES_DEFAUT, DEVINETTES_DEFAUT, BLAGUES_DEFAUT,
@@ -14,7 +14,7 @@ import {
   Clock, User, ChevronLeft,
 } from "lucide-react";
 
-const APP_VERSION = "1.3.1";
+const APP_VERSION = "1.4.0";
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 // ---------- Couleurs (mêmes variables CSS que index.html) ----------
@@ -534,7 +534,7 @@ function GestionCalendrier({ edt }) {
   const [dateFin, setDateFin] = useState("");
   const [dateFerie, setDateFerie] = useState("");
 
-  const refCal = doc(db, "config", "calendrier");
+  const refCal = doc(db, COL.config, "calendrier");
 
   const recharger = async (zone) => {
     if (!confirm(`Recharger les dates officielles de la zone ${zone} ? Cela remplace toutes les périodes actuelles.`)) return;
@@ -666,11 +666,11 @@ function GestionPhrases({ phrases }) {
 
   const ajouter = async () => {
     if (!texte.trim()) return;
-    await addDoc(collection(db, "phrases"), { texte: texte.trim(), palier, dateAjout: Date.now() });
+    await addDoc(collection(db, COL.phrases), { texte: texte.trim(), palier, dateAjout: Date.now() });
     setTexte(""); setFormOuvert(false);
   };
-  const supprimer = async (id) => deleteDoc(doc(db, "phrases", id));
-  const modifier = async (id, nouveauTexte) => updateDoc(doc(db, "phrases", id), { texte: nouveauTexte });
+  const supprimer = async (id) => deleteDoc(doc(db, COL.phrases, id));
+  const modifier = async (id, nouveauTexte) => updateDoc(doc(db, COL.phrases, id), { texte: nouveauTexte });
 
   return (
     <div>
@@ -706,11 +706,11 @@ function GestionBlagues({ blagues }) {
 
   const ajouter = async () => {
     if (!texte.trim()) return;
-    await addDoc(collection(db, "blagues"), { texte: texte.trim(), dateAjout: Date.now() });
+    await addDoc(collection(db, COL.blagues), { texte: texte.trim(), dateAjout: Date.now() });
     setTexte(""); setFormOuvert(false);
   };
-  const supprimer = async (id) => deleteDoc(doc(db, "blagues", id));
-  const modifier = async (id, nouveauTexte) => updateDoc(doc(db, "blagues", id), { texte: nouveauTexte });
+  const supprimer = async (id) => deleteDoc(doc(db, COL.blagues, id));
+  const modifier = async (id, nouveauTexte) => updateDoc(doc(db, COL.blagues, id), { texte: nouveauTexte });
 
   return (
     <div>
@@ -741,10 +741,10 @@ function GestionDevinettes({ devinettes }) {
 
   const ajouter = async () => {
     if (!question.trim() || !reponse.trim()) return;
-    await addDoc(collection(db, "devinettes"), { question: question.trim(), reponse: reponse.trim(), dateAjout: Date.now() });
+    await addDoc(collection(db, COL.devinettes), { question: question.trim(), reponse: reponse.trim(), dateAjout: Date.now() });
     setQuestion(""); setReponse(""); setFormOuvert(false);
   };
-  const supprimer = async (id) => deleteDoc(doc(db, "devinettes", id));
+  const supprimer = async (id) => deleteDoc(doc(db, COL.devinettes, id));
 
   return (
     <div>
@@ -847,7 +847,7 @@ function GestionPhotos({ photos, profil }) {
     setEnCours(true);
     try {
       const url = await comprimerImage(fichier);
-      await addDoc(collection(db, "photos"), { url, auteur: profil.prenom, dateAjout: Date.now() });
+      await addDoc(collection(db, COL.photos), { url, auteur: profil.prenom, dateAjout: Date.now() });
     } catch (e) {
       if (e && e.message === "trop-lourd") alert("Cette photo est trop lourde même après compression. Essaie une autre photo.");
       else alert("Échec de l'ajout de la photo. Réessaie.");
@@ -857,7 +857,7 @@ function GestionPhotos({ photos, profil }) {
 
   const supprimer = async (photo) => {
     if (!confirm("Supprimer cette photo pour tout le monde ?")) return;
-    await deleteDoc(doc(db, "photos", photo.id));
+    await deleteDoc(doc(db, COL.photos, photo.id));
   };
 
   return (
@@ -959,42 +959,57 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
-    const refCal = doc(db, "config", "calendrier");
+    let annule = false;
+    let desabonner = () => {};
+    // Déménagement : on recopie d'abord les données de l'ancien projet (une seule fois),
+    // AVANT de lancer les écoutes, pour ne jamais remplir la base avec les valeurs par défaut.
+    migrerSiBesoin()
+      .then(() => true)
+      .catch((e) => { console.warn("Déménagement des données impossible pour l'instant", e); return false; })
+      .then((ok) => { if (!annule) desabonner = ecouter(ok); });
+    return () => { annule = true; desabonner(); };
+  }, []);
+
+  // Écoute en temps réel. Si le déménagement n'a pas pu se faire (pas de réseau),
+  // on n'écrit rien par défaut : il sera retenté à la prochaine ouverture.
+  function ecouter(seedAutorise) {
+    if (!seedAutorise) seedFait.current = { phrases: true, blagues: true, devinettes: true, calendrier: true };
+    const refCal = doc(db, COL.config, "calendrier");
     const unsubCal = onSnapshot(refCal, async (snap) => {
       if (snap.exists()) setEdt(snap.data());
-      else {
+      else if (!seedFait.current.calendrier) {
         const donnees = { zone: "C", vacances: ZONES.C.vacances, feries: FERIES_COMMUNS, rentree: "2026-09-01" };
         try { await setDoc(refCal, donnees); } catch {}
       }
     });
 
-    const unsubPhrases = onSnapshot(collection(db, "phrases"), (snap) => {
+    const unsubPhrases = onSnapshot(collection(db, COL.phrases), (snap) => {
       setPhrases(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       if (snap.empty && !seedFait.current.phrases) {
         seedFait.current.phrases = true;
-        seedCollection("phrases", PHRASES_DEFAUT.map(([palier, texte]) => ({ palier, texte, auteur: "Christophe", dateAjout: Date.now() })));
+        seedCollection(COL.phrases, PHRASES_DEFAUT.map(([palier, texte]) => ({ palier, texte, auteur: "Christophe", dateAjout: Date.now() })));
       }
     });
-    const unsubBlagues = onSnapshot(collection(db, "blagues"), (snap) => {
+    const unsubBlagues = onSnapshot(collection(db, COL.blagues), (snap) => {
       setBlagues(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       if (snap.empty && !seedFait.current.blagues) {
         seedFait.current.blagues = true;
-        seedCollection("blagues", BLAGUES_DEFAUT.map((texte) => ({ texte, auteur: "Christophe", dateAjout: Date.now() })));
+        seedCollection(COL.blagues, BLAGUES_DEFAUT.map((texte) => ({ texte, auteur: "Christophe", dateAjout: Date.now() })));
       }
     });
-    const unsubDevinettes = onSnapshot(collection(db, "devinettes"), (snap) => {
+    const unsubDevinettes = onSnapshot(collection(db, COL.devinettes), (snap) => {
       setDevinettes(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
       if (snap.empty && !seedFait.current.devinettes) {
         seedFait.current.devinettes = true;
-        seedCollection("devinettes", DEVINETTES_DEFAUT.map(([question, reponse]) => ({ question, reponse, auteur: "Christophe", dateAjout: Date.now() })));
+        seedCollection(COL.devinettes, DEVINETTES_DEFAUT.map(([question, reponse]) => ({ question, reponse, auteur: "Christophe", dateAjout: Date.now() })));
       }
     });
-    const unsubPhotos = onSnapshot(collection(db, "photos"), (snap) => {
+    const unsubPhotos = onSnapshot(collection(db, COL.photos), (snap) => {
       setPhotos(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
 
     return () => { unsubCal(); unsubPhrases(); unsubBlagues(); unsubDevinettes(); unsubPhotos(); };
-  }, []);
+  }
 
   if (!profil) {
     return <EcranProfil onValider={(p) => { sauverProfil(p); setProfil(p); }} />;

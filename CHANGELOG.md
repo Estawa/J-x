@@ -2,6 +2,15 @@
 
 Voir INSTALLATION.md pour la mise en ligne (GitHub / Firebase / Vercel).
 
+## v1.4.0 — 22/10/2026
+- **Déménagement** vers le projet Firebase « Applis perso » (identifiant doucheco), partagé avec
+  Douch'Eco, Bricolage Pro et Courses Pro. Les données du compteur y sont rangées à part
+  (collections vac_config, vac_phrases, vac_blagues, vac_devinettes, vac_photos)
+- À la première ouverture de cette version, toutes les données de l'ancien projet « Vacances »
+  (calendrier, phrases, blagues, devinettes, photos) sont recopiées automatiquement, une seule fois,
+  avant tout affichage : rien à faire pour les collègues
+- L'ancien projet reste intact (en lecture seule) en secours
+
 ## v1.3.1 — 16/09/2026
 - Suppression du compteur « jours au total » sur l'écran d'accueil (redondant avec le
   nouveau « dodos restants »), pour les deux onglets. Il ne reste que le nombre de
